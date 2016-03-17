@@ -6,16 +6,20 @@ declare -A ENV=(
     ["SERVER_SOFTWARE"]=httpd.sh
     ["GATEWAY_INTERFACE"]=CGI/1.1
     ["SERVER_PROTOCOL"]=
+    ["SERVER_ADDR"]=127.0.0.1
     ["REQUEST_METHOD"]=
-    ["HTTP_HOST"]=
-    ["HTTP_COOKIE"]=
     ["HTTP_ACCEPT"]=
     ["HTTP_ACCEPT_ENCODING"]=
     ["HTTP_ACCEPT_LANGUAGE"]=
+    ["HTTP_CACHE_CONTROL"]=
+    ["HTTP_COOKIE"]=
+    ["HTTP_CONNECTION"]=
+    ["HTTP_HOST"]=
     ["HTTP_USER_AGENT"]=
     ["HTTP_REFERER"]=
     ["PATH_INFO"]=
     ["PATH_TRANSLATED"]=
+    ["SCRIPT_FILENAME"]=
     ["SCRIPT_NAME"]=
     ["QUERY_STRING"]=
     ["REMOTE_ADDR"]=$SOCAT_PEERADDR
@@ -73,6 +77,7 @@ esac
 
 ENV[REQUEST_METHOD]=$method
 ENV[SCRIPT_NAME]=${path%\?*}
+ENV[SCRIPT_FILENAME]=`pwd`${path%\?*}
 ENV[PATH_INFO]=${ENV[SCRIPT_NAME]}
 ENV[SERVER_PROTOCOL]=$protocol
 
@@ -95,6 +100,14 @@ while readtoken line; do
 
         Accept-Encoding:*)
             ENV[HTTP_ACCEPT_ENCODING]=`echo ${line#*:}`
+            ;;
+
+        Connection:*)
+            ENV[HTTP_CONNECTION]=`echo ${line#*:}`
+            ;;
+
+        Cache-Control:*)
+            ENV[HTTP_CACHE_CONTROL]=`echo ${line#*:}`
             ;;
 
         Content-Type:*)
