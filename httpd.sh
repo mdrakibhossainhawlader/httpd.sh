@@ -88,7 +88,7 @@ case $path in
 esac
 
 while readtoken line; do
-    echo $line
+#echo $line
     case $line in
         Accept:*)
             ENV[HTTP_ACCEPT]=`echo ${line#*:}`
@@ -144,5 +144,11 @@ ENV[PATH_TRANSLATED]=${ENV[HTTP_HOST]}${ENV[PATH_INFO]}
 
 for index in ${!ENV[@]}; do
     echo $index:${ENV[$index]}
+    export $index="${ENV[$index]}"
 done
+
+export REDIRECT_STATUS=1
+#echo exec php on ${ENV[SCRIPT_FILENAME]}
+echo HTTP/1.1 200 OK
+php5-cgi ${ENV[SCRIPT_FILENAME]}
 
