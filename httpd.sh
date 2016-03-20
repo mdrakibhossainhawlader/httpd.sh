@@ -1,5 +1,8 @@
 #!/bin/bash
 
+DOCUMENT_ROOT=/data/httpd.sh
+INDEX=index.php
+
 declare -A ENV=(
     ["SERVER_NAME"]=noname
     ["SERVER_PORT"]=8080
@@ -50,10 +53,7 @@ function error()
 readtoken method path protocol
 
 case "$method" in 
-    HEAD)
-        ;;
-
-    GET)
+    HEAD|GET)
         ;;
 
     *)
@@ -62,10 +62,7 @@ case "$method" in
 esac
 
 case $protocol in
-    HTTP/1.1)
-        ;;
-
-    HTTP/1.0)
+    HTTP/1.1|HTTP/1.0)
         ;;
         
     *)
@@ -76,16 +73,13 @@ esac
 [ "${path:0:1}" != "/" ] && error 500 "bad http request!"
 
 ENV[REQUEST_METHOD]=$method
-ENV[SCRIPT_NAME]=${path%\?*}
-ENV[SCRIPT_FILENAME]=`pwd`${path%\?*}
+ENV[SCRIPT_NAME]=${path%%\?*}
+[ ${#ENV[SCRIPT_NAME]} -eq 1 ] && ENV[SCRIPT_NAME]=/$INDEX
+ENV[SCRIPT_FILENAME]=$DOCUMENT_ROOT${ENV[SCRIPT_NAME]}
 ENV[PATH_INFO]=${ENV[SCRIPT_NAME]}
 ENV[SERVER_PROTOCOL]=$protocol
 
-case $path in 
-    *\?*)
-        ENV[QUERY_STRING]=${path#*\?}
-        ;;
-esac
+[[ "$path" =~ [^\?]*\?.* ]] && ENV[QUERY_STRING]=${path#*\?}
 
 while readtoken line; do
 #echo $line
@@ -143,12 +137,80 @@ done
 ENV[PATH_TRANSLATED]=${ENV[HTTP_HOST]}${ENV[PATH_INFO]}
 
 for index in ${!ENV[@]}; do
-    echo $index:${ENV[$index]}
+#echo $index:${ENV[$index]}
     export $index="${ENV[$index]}"
 done
 
-export REDIRECT_STATUS=1
-#echo exec php on ${ENV[SCRIPT_FILENAME]}
-echo HTTP/1.1 200 OK
-php5-cgi ${ENV[SCRIPT_FILENAME]}
+run_cgi=0
+case ${ENV[SCRIPT_NAME]#*.} in 
+    css)
+        mine_type=text/css
+        ;;
 
+    js)
+        mine_type=text/javascript
+        ;;
+
+    html)
+        mine_type=text/html
+        ;;
+
+    php)
+        mine_type=text/plain
+        run_cgi=1
+        ;;
+
+    gif)
+        mine_type=image/gif
+        ;;
+    
+    jpg)
+        mine_type=image/jpeg
+        ;;
+
+    png)
+        mine_type=image/png
+        ;;
+
+    mpeg|mpg)
+        mine_type=video/mpeg
+        ;;
+
+    mp3)
+        mine_type=audio/mp3
+        ;;
+
+    pdf)
+        mine_type=application/pdf
+        ;;
+
+    wav)
+        mine_type=audio/x-wav
+        ;;
+
+    *)
+        mine_type=text/plain
+        ;;
+esac
+
+
+if [ $run_cgi -eq 0 ]; then
+    if [ ! -f "${ENV[SCRIPT_FILENAME]}" ]; then 
+        error 404 "not found"
+    fi
+
+    echo ${ENV[SERVER_PROTOCOL]} 200 OK
+    echo Connection: close
+    echo Date: `date -u +"%F %T GMT"`
+    echo Content-Type: $mine_type
+    echo Content-Length: \
+        `stat ${ENV[SCRIPT_FILENAME]} | awk '/Size/{ print $2 }'`
+    echo
+    cat ${ENV[SCRIPT_FILENAME]} 
+    exit -1
+fi
+
+echo HTTP/1.1 200 OK
+echo Connection: close
+php5-cgi ${ENV[SCRIPT_FILENAME]}
+ 
