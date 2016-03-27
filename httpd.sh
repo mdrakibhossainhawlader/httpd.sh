@@ -2,6 +2,7 @@
 
 DOCUMENT_ROOT=/data/httpd.sh
 INDEX=index.php
+CACHE_DIR=./cache
 
 declare -A ENV=(
     ["SERVER_NAME"]=noname
@@ -33,6 +34,7 @@ declare -A ENV=(
 
 [ -z "$IS_SERVER" ] && {
     export IS_SERVER=1
+    rm $CACHE_DIR/*
     socat -t2 -T20 TCP-LISTEN:${ENV[SERVER_PORT]},fork,reuseaddr exec:"$0"
     exit -1
 }
@@ -212,5 +214,42 @@ fi
 
 echo HTTP/1.1 200 OK
 echo Connection: close
-php5-cgi ${ENV[SCRIPT_FILENAME]}
+
+function get_cache_file()
+(
+    flock 9
+    cache_file=$CACHE_DIR/`echo $RANDOM\`date +%s%N\`$RANDOM | sha224sum | cut -d' ' -f1`
+    while [ -f $cache_file ]; do
+        cache_file=$CACHE_DIR/`echo $RANDOM\`date +%s%N\`$RANDOM | sha224sum | cut -d' ' -f1`
+    done
+    touch $cache_file
+    echo $cache_file
+) 9<./
+
+cache_file=`get_cache_file`
+
+php5-cgi ${ENV[SCRIPT_FILENAME]} | {
+    while readtoken line; do
+        case $line in
+            Content-type:*)
+                echo $line
+                ;;
+
+            "")
+                break
+                ;;
+
+            *)
+                echo $line
+                ;;
+        esac
+    done >&9
+    cat
+} 9>&1 >$cache_file
+echo Content-Length: `stat $cache_file | awk '/Size/{ print $2 }'`
+echo
+cat $cache_file
+
+rm $cache_file
+
  
