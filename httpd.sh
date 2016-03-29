@@ -229,7 +229,7 @@ function get_cache_file()
 
 cache_file=`get_cache_file`
 
-php5-cgi ${ENV[SCRIPT_FILENAME]} | {
+php5-cgi -n ${ENV[SCRIPT_FILENAME]} | {
     while readtoken line; do
         case $line in
             Content-type:*)
