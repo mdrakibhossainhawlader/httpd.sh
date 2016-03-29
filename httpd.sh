@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOCUMENT_ROOT=/data/httpd.sh
+DOCUMENT_ROOT=`pwd`/doc
 INDEX=index.php
 CACHE_DIR=./cache
 
@@ -34,6 +34,7 @@ declare -A ENV=(
 
 [ -z "$IS_SERVER" ] && {
     export IS_SERVER=1
+    export REDIRECT_STATUS=1    #PHP support
     rm $CACHE_DIR/*
     socat -t2 -T20 TCP-LISTEN:${ENV[SERVER_PORT]},fork,reuseaddr exec:"$0"
     exit -1
