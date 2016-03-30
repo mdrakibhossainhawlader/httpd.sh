@@ -1,5 +1,5 @@
 简介
-    httpd.sh的目的是使用bash创建迷你的、配置简单、立即可用的http服务器，支持PHP。目前正在逐渐支持完整的HTTP协议。支持以CGI方式连接PHP。支持完整的Get协议。你可以放心使用httpd.sh构建小型应用（个人网站或者HTTP应用）。欢迎大家一起完善httpd.sh。
+    httpd.sh的目的是使用bash创建迷你的、配置简单、立即可用的http服务器。目前正在逐渐支持完整的HTTP协议。支持以CGI方式连接PHP, 支持PHP框架（如ThinkPHP）。支持完整的Get协议。你可以放心使用httpd.sh构建小型应用（个人网站或者HTTP应用）。欢迎大家一起完善httpd.sh。
     
 使用
     首先，你需要确保系统已经安装了socat和php5-cgi（不使用php可以不安装php5-cgi）。
@@ -31,4 +31,6 @@
 欢迎
     欢迎有兴趣的朋友提交httpd.sh的bug、期望的特性。我将加入到开发计划。欢迎提交你的代码。
     
-    
+ThinkPHP支持
+    将ThinkPHP的URL_MODEL设置为兼容模式，访问时使用 http://127.0.0.1:8080/index.php?s=/Home/Index/index 即可。
+
