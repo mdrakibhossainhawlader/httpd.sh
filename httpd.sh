@@ -1,16 +1,14 @@
 #!/bin/bash
 
-DOCUMENT_ROOT=`pwd`/doc
-INDEX=index.php
-CACHE_DIR=./cache
+source config.sh
 
 declare -A ENV=(
-    ["SERVER_NAME"]=noname
-    ["SERVER_PORT"]=8080
-    ["SERVER_SOFTWARE"]=httpd.sh
-    ["GATEWAY_INTERFACE"]=CGI/1.1
+    ["SERVER_NAME"]=${CONFIG[SERVER_NAME]}
+    ["SERVER_PORT"]=${CONFIG[SERVER_PORT]}
+    ["SERVER_SOFTWARE"]=${CONFIG[SERVER_SOFTWARE]}
+    ["GATEWAY_INTERFACE"]=${CONFIG[GATEWAY_INTERFACE]}
     ["SERVER_PROTOCOL"]=
-    ["SERVER_ADDR"]=127.0.0.1
+    ["SERVER_ADDR"]=${CONFIG[SERVER_ADDR]}
     ["REQUEST_METHOD"]=
     ["HTTP_ACCEPT"]=
     ["HTTP_ACCEPT_ENCODING"]=
