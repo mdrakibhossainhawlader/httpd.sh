@@ -34,7 +34,28 @@ declare -A ENV=(
     export IS_SERVER=1
     export REDIRECT_STATUS=1    #PHP support
     rm $CACHE_DIR/*
-    socat -t2 -T20 TCP-LISTEN:${ENV[SERVER_PORT]},fork,reuseaddr exec:"$0"
+
+    if [ ${CONFIG[HTTPS_ENABLED]} == "yes" ]; then
+        SSL_KEY_PATH=$SSL_DIR/server.key
+        SSL_SIGN_PATH=$SSL_DIR/server.crt
+        SSL_CERT_PATH=$SSL_DIR/server.pem
+        SSL_DHPARAMS_PATH=$SSL_DIR/dhparams.pem
+
+        if [ ! -d $SSL_DIR ]; then
+            mkdir $SSL_DIR
+            openssl genrsa -out $SSL_KEY_PATH 1024
+            openssl req -new -key $SSL_KEY_PATH -x509 -days 3653 -out $SSL_SIGN_PATH
+            cat $SSL_KEY_PATH $SSL_SIGN_PATH >$SSL_CERT_PATH
+            openssl dhparam -out $SSL_DHPARAMS_PATH 1024
+            cat $SSL_DHPARAMS_PATH >>$SSL_CERT_PATH
+        fi
+        
+        LISTEN_ARGS="OPENSSL-LISTEN":${ENV[SERVER_PORT]}",cert=$SSL_CERT_PATH,key=$SSL_KEY_PATH,verify=0"
+    else
+        LISTEN_ARGS="TCP-LISTEN":${ENV[SERVER_PORT]}
+    fi
+
+    socat -t2 -T20 $LISTEN_ARGS,fork,reuseaddr exec:"$0"
     exit -1
 }
 
@@ -227,7 +248,7 @@ function get_cache_file()
 
 cache_file=`get_cache_file`
 
-php5-cgi -n ${ENV[SCRIPT_FILENAME]} | {
+php-cgi -n ${ENV[SCRIPT_FILENAME]} | {
     while readtoken line; do
         case $line in
             Content-type:*)
