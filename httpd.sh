@@ -101,6 +101,8 @@ ENV[SCRIPT_FILENAME]=$DOCUMENT_ROOT${ENV[SCRIPT_NAME]}
 ENV[PATH_INFO]=${ENV[SCRIPT_NAME]}
 ENV[SERVER_PROTOCOL]=$protocol
 
+[ ${#ENV[SCRIPT_NAME]} -eq 1 ] && error 404 "not found"
+
 [[ "$path" =~ [^\?]*\?.* ]] && ENV[QUERY_STRING]=${path#*\?}
 
 while readtoken line; do
@@ -163,7 +165,7 @@ for index in ${!ENV[@]}; do
     export $index="${ENV[$index]}"
 done
 
-run_cgi=0
+cgi_type=
 case ${ENV[SCRIPT_NAME]#*.} in 
     css)
         mine_type=text/css
@@ -179,7 +181,12 @@ case ${ENV[SCRIPT_NAME]#*.} in
 
     php)
         mine_type=text/plain
-        run_cgi=1
+        cgi_type=php
+        ;;
+
+    sh)
+        mine_type=text/plain
+        cgi_type=sh
         ;;
 
     gif)
@@ -216,7 +223,7 @@ case ${ENV[SCRIPT_NAME]#*.} in
 esac
 
 
-if [ $run_cgi -eq 0 ]; then
+if [ ! $cgi_type ]; then
     if [ ! -f "${ENV[SCRIPT_FILENAME]}" ]; then 
         error 404 "not found"
     fi
@@ -248,7 +255,15 @@ function get_cache_file()
 
 cache_file=`get_cache_file`
 
-php-cgi -n ${ENV[SCRIPT_FILENAME]} | {
+if [ $cgi_type == "php" ]; then
+    CGI_RUN="php-cgi -n"
+elif [ $cgi_type == "sh" ]; then
+    CGI_RUN="bash"
+else
+    exit -1
+fi
+
+$CGI_RUN ${ENV[SCRIPT_FILENAME]} | {
     while readtoken line; do
         case $line in
             Content-type:*)
