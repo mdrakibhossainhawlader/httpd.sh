@@ -242,18 +242,7 @@ fi
 echo HTTP/1.1 200 OK
 echo Connection: close
 
-function get_cache_file()
-(
-    flock 9
-    cache_file=$CACHE_DIR/`echo $RANDOM\`date +%s%N\`$RANDOM | sha224sum | cut -d' ' -f1`
-    while [ -f $cache_file ]; do
-        cache_file=$CACHE_DIR/`echo $RANDOM\`date +%s%N\`$RANDOM | sha224sum | cut -d' ' -f1`
-    done
-    touch $cache_file
-    echo $cache_file
-) 9<./
-
-cache_file=`get_cache_file`
+cache_file=`uuidgen`
 
 if [ $cgi_type == "php" ]; then
     CGI_RUN="php-cgi -n"
